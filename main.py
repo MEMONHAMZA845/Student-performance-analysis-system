@@ -1,6 +1,7 @@
 import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
+from visualization import View_Charts
+from Export_reports import Export_analysis_report
+
 
 df = pd.read_csv("data/student-mat.csv")
 
@@ -60,7 +61,7 @@ def Passing_failing_students():
     while True:
 
         try:
-            user_input = int(input("Enter A number From the following Menu "))
+            user_input = int(input("Enter A number From the following Menu a : "))
         except ValueError:
             print("Enter a Valid Input :")
             continue
@@ -134,26 +135,25 @@ def Passing_failing_students():
             print("enter a valid input ")
             break
 
-def Identify_student_at_risk():
-
-    flagged = 0
-    for _,row in df.iterrows():
+def get_at_risk_students():
+    records = []
+    for _, row in df.iterrows():
         risk = 0
         reasons = []
 
         if row["average_marks"] <= 50:
             risk += 2
-            reasons.append("Average Marks are = or lower then 50 ")
-        elif row["average_marks"] <= 60 and row["average_marks"] > 50:
-            risk += 1 
-            reasons.append("Average marks are =  or lower  then 60 ")
+            reasons.append("Average marks <= 50")
+        elif row["average_marks"] <= 60:
+            risk += 1
+            reasons.append("Average marks <= 60")
 
         if row["attendance_percent"] <= 60:
             risk += 2
-            reasons.append("Attendance is = or  lower then 60 ")
-        elif row["attendance_percent"] <= 75 and row["attendance_percent"] > 60:
+            reasons.append("Attendance <= 60%")
+        elif row["attendance_percent"] <= 75:
             risk += 1
-            reasons.append(" Attendance is = or lower then 75")
+            reasons.append("Attendance <= 75%")
 
         if risk >= 3:
             level = "high"
@@ -162,23 +162,23 @@ def Identify_student_at_risk():
         else:
             continue
 
-        flagged +=1
-        print("\nStudent name =", row["name"])
-        print("Student id =", row["student_id"])
-        print("student risk =", risk)
-        print("risk level =", level)
-        print("Reasons :")
-        for index, r in enumerate(reasons):
-            print(f"{index}. {r}\n")
+        records.append({
+            "student_id": row["student_id"],
+            "name": row["name"],
+            "average_marks": row["average_marks"],
+            "attendance_percent": row["attendance_percent"],
+            "risk_score": risk,
+            "risk_level": level,
+            "reasons": "; ".join(reasons),
+        })
+    return pd.DataFrame(records)
 
-    print(f"Total Students at risk : {flagged}")
-
-def Export_analysis_report():
-    pass
-
-def View_Charts():
-    pass
-
+def Identify_student_at_risk():
+    at_risk = get_at_risk_students()
+    if at_risk.empty:
+        print("No students at risk.")
+        return
+    print(f"\nTotal Students at risk : {len(at_risk)}")
 
 while True:
 
@@ -195,7 +195,7 @@ while True:
            "6. View passing and failing students \n" 
            "7. Identify students at academic risk \n" 
            "8. Export analysis reports \n" 
-           "9. View Charts \n"
+           "9. Save and View Charts \n"
            "10. Exit \n")
 
     try:
@@ -226,10 +226,10 @@ while True:
         Identify_student_at_risk()
         
     elif user_input ==8:
-        Export_analysis_report()
+        Export_analysis_report(df, get_at_risk_students)
         
     elif user_input == 9 :
-        View_Charts()
+        View_Charts(df)
         
     elif user_input == 10 :
         break
